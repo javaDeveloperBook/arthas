@@ -33,6 +33,7 @@ public class ArthasBootstrap {
     private static Logger logger = LogUtil.getArthasLogger();
     private static ArthasBootstrap arthasBootstrap;
 
+    // 线程安全,利用CAS(Compare And Swap)来实现线程安全的
     private AtomicBoolean isBindRef = new AtomicBoolean(false);
     private int pid;
     private Instrumentation instrumentation;
@@ -74,37 +75,55 @@ public class ArthasBootstrap {
 
         long start = System.currentTimeMillis();
 
+        // 保证启动 arthas server 执行一次
         if (!isBindRef.compareAndSet(false, true)) {
             throw new IllegalStateException("already bind");
         }
 
         try {
+            // 创建 Shell 服务选项对象
             ShellServerOptions options = new ShellServerOptions()
                             .setInstrumentation(instrumentation)
                             .setPid(pid)
                             .setSessionTimeout(configure.getSessionTimeout() * 1000);
+            // 创建 shellServer 对象，ShellServer 是整个服务端的门面类，由ShellServerImpl 具体实现
             shellServer = new ShellServerImpl(options, this);
+            // 创建内置命令包对象， 重点看一下（BuiltinCommandPack implements CommandResolver）
             BuiltinCommandPack builtinCommands = new BuiltinCommandPack();
+            // 加入命令解析器
             List<CommandResolver> resolvers = new ArrayList<CommandResolver>();
             resolvers.add(builtinCommands);
-            // TODO: discover user provided command resolver
+            // TODO: discover user provided command resolver 发现用户提供的命令解析器
+            //如果 Telnet 端口大于0，也就是 as.sh 启动命令设置有 telnet-port 参数
             if (configure.getTelnetPort() > 0) {
+                //注册 TelnetTermServer 通讯方式
                 shellServer.registerTermServer(new TelnetTermServer(configure.getIp(), configure.getTelnetPort(),
                                 options.getConnectionTimeout()));
             } else {
                 logger.info("telnet port is {}, skip bind telnet server.", configure.getTelnetPort());
             }
+            //如果 Http 端口大于0，也就是 as.sh 启动命令设置有 http-port 参数
             if (configure.getHttpPort() > 0) {
+                //注册 HttpTermServer 通讯方式
                 shellServer.registerTermServer(new HttpTermServer(configure.getIp(), configure.getHttpPort(),
                                 options.getConnectionTimeout()));
             } else {
                 logger.info("http port is {}, skip bind http server.", configure.getHttpPort());
             }
 
+            // 遍历所有命令解析器
             for (CommandResolver resolver : resolvers) {
+                // 向 shellServer 设置命令解析器，这里是 BuiltinCommandPack 对象
                 shellServer.registerCommandResolver(resolver);
             }
 
+            /**
+             * 监听启动方法，监听客户端传来的命令
+             *
+             * 会调用所有注册的TermServer的listen方法，
+             * 比如 TelnetTermServer。然后 TelnetTermServer 的 listen 方法会注册一个回调类，
+             * 该回调类在有新的客户端连接时会调用 TermServerTermHandler 的 handle 方法处理
+             */
             shellServer.listen(new BindHandler(isBindRef));
 
             logger.info("as-server listening on network={};telnet={};http={};timeout={};", configure.getIp(),
@@ -116,6 +135,7 @@ public class ArthasBootstrap {
         } catch (Throwable e) {
             logger.error(null, "Error during bind to port " + configure.getTelnetPort(), e);
             if (shellServer != null) {
+                // 如果异常则关闭 shellServer
                 shellServer.close();
             }
             throw e;
@@ -168,7 +188,12 @@ public class ArthasBootstrap {
         return arthasBootstrap;
     }
 
+    /**
+     * 执行命令任务
+     * @param command
+     */
     public void execute(Runnable command) {
+        // 线程池执行任务
         executorService.execute(command);
     }
 

@@ -88,6 +88,10 @@ public class ShellServerImpl extends ShellServer {
         return this;
     }
 
+    /**
+     * 用于处理客户端的连接
+     * @param term
+     */
     public void handleTerm(Term term) {
         synchronized (this) {
             // That might happen with multiple ser
@@ -96,33 +100,51 @@ public class ShellServerImpl extends ShellServer {
                 return;
             }
         }
-
+        //session就是客户端的连接
         ShellImpl session = createShell(term);
+        // 设置欢迎语
         session.setWelcome(welcomeMessage);
         session.closedFuture.setHandler(new SessionClosedHandler(this, session));
         session.init();
         sessions.put(session.id, session); // Put after init so the close handler on the connection is set
+        // readline() 会等待客户端的输入 ，$ 符号开始，
+        // ShellLineHandler.handle 对命令进行处理
         session.readline(); // Now readline
     }
 
+    /**
+     * 调用所有注册的 TermServer 的listen方法，比如TelnetTermServer。
+     * 然后 TelnetTermServer 的listen方法会注册一个回调类，
+     * 该回调类在有新的客户端连接时会调用 TermServerTermHandler 的 handle 方法处理
+     * @param listenHandler handler for getting notified when service is started
+     * @return
+     */
     @Override
     public ShellServer listen(final Handler<Future<Void>> listenHandler) {
+        //终端的应用程序服务列表
         final List<TermServer> toStart;
+        // ShellServer 是否关闭
         synchronized (this) {
             if (!closed) {
                 throw new IllegalStateException("Server listening");
             }
             toStart = termServers;
         }
+        //一个提供原子操作的Integer的类，存放当前 TermServer 个数
         final AtomicInteger count = new AtomicInteger(toStart.size());
+        // 如果TermServer 个数为 0 ，则设置关闭为false
         if (count.get() == 0) {
             setClosed(false);
             listenHandler.handle(Future.<Void>succeededFuture());
             return this;
         }
+        // 创建 TermServerListenHandler 对象
         Handler<Future<TermServer>> handler = new TermServerListenHandler(this, listenHandler, toStart);
+        // 遍历 termServer
         for (TermServer termServer : toStart) {
+            // 设置 TermServerTermHandler 对象
             termServer.termHandler(new TermServerTermHandler(this));
+            // 启动 termServer 监听，以 TelnetTermServer listen() 为例讲解
             termServer.listen(handler);
         }
         return this;

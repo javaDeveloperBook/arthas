@@ -142,6 +142,7 @@ public class ShellImpl implements Shell {
     }
 
     public void readline() {
+        // 调用了 ShellLineHandler.handle 对命令进行处理。这里面的封装比较复杂，
         term.readline(Constants.DEFAULT_PROMPT, new ShellLineHandler(this),
                 new CommandManagerCompletionHandler(commandManager));
     }

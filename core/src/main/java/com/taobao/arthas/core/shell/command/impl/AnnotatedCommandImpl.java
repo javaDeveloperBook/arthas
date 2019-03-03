@@ -70,6 +70,10 @@ public class AnnotatedCommandImpl extends Command {
         return cli;
     }
 
+    /**
+     * 执行命令任务
+     * @param process
+     */
     private void process(CommandProcess process) {
         AnnotatedCommand instance;
         try {

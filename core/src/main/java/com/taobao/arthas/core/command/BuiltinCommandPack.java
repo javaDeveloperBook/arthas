@@ -46,6 +46,9 @@ public class BuiltinCommandPack implements CommandResolver {
 
     private static List<Command> commands = new ArrayList<Command>();
 
+    /**
+     * 静态代码块初始化命令
+     */
     static {
         initCommands();
     }
@@ -55,6 +58,9 @@ public class BuiltinCommandPack implements CommandResolver {
         return commands;
     }
 
+    /**
+     * Arthas 使用命令
+     */
     private static void initCommands() {
         commands.add(Command.create(HelpCommand.class));
         commands.add(Command.create(KeymapCommand.class));

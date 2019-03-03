@@ -46,9 +46,13 @@ public class TermImpl implements Term {
     }
 
     public TermImpl(Keymap keymap, TtyConnection conn) {
+        // 设置连接
         this.conn = conn;
+        // 设置快捷键
         readline = new Readline(keymap);
+        // 设置历史命令，从 CMD_HISTORY_FILE 文件中读出
         readline.setHistory(FileUtils.loadCommandHistory(new File(Constants.CMD_HISTORY_FILE)));
+        // 快捷键处理类
         for (Function function : readlineFunctions) {
             readline.addFunction(function);
         }
@@ -84,6 +88,7 @@ public class TermImpl implements Term {
             throw new IllegalStateException();
         }
         inReadline = true;
+        // 注册回调类RequestHandler，该类包装了ShellLineHandler，处理逻辑还是在ShellLineHandler类里面
         readline.readline(conn, prompt, new RequestHandler(this, lineHandler), new CompletionHandler(completionHandler, session));
     }
 

@@ -55,16 +55,28 @@ public class JobControllerImpl implements JobController {
         return jobs.remove(id) != null;
     }
 
+    /**
+     * 1.创建 Job 时，会根据具体客户端传递的命令，找到对应的 Command，并包装成 Process, Process 再被包装成 Job。
+     * 2.运行 Job 时，反向先调用 Process，再找到对应的 Command，最终调用 Command 的 process 处理请求。
+     * @param commandManager command manager
+     * @param tokens    the command tokens
+     * @param shell     the current shell
+     * @return
+     */
     @Override
     public Job createJob(InternalCommandManager commandManager, List<CliToken> tokens, ShellImpl shell) {
+        // jobId
         int jobId = idGenerator.incrementAndGet();
         StringBuilder line = new StringBuilder();
         for (CliToken arg : tokens) {
             line.append(arg.raw());
         }
+        // 是否后台运行
         boolean runInBackground = runInBackground(tokens);
+        //创建由shell管理的进程
         Process process = createProcess(tokens, commandManager, jobId, shell.term());
         process.setJobId(jobId);
+        // 创建 job 对象，重要的 process 参数
         JobImpl job = new JobImpl(jobId, this, process, line.toString(), runInBackground, shell);
         jobs.put(jobId, job);
         return job;
@@ -113,7 +125,7 @@ public class JobControllerImpl implements JobController {
 
     /**
      * Try to create a process from the command line tokens.
-     *
+     * 尝试从命令行标记创建进程。
      * @param line the command line tokens
      * @param commandManager command manager
      * @param jobId job id
@@ -126,6 +138,7 @@ public class JobControllerImpl implements JobController {
             while (tokens.hasNext()) {
                 CliToken token = tokens.next();
                 if (token.isText()) {
+                    // 取得 Command 对象
                     Command command = commandManager.getCommand(token.value());
                     if (command != null) {
                         return createCommandProcess(command, tokens, jobId, term);
@@ -150,6 +163,15 @@ public class JobControllerImpl implements JobController {
         return runInBackground;
     }
 
+    /**
+     * 创建 Process，重要参数是 command
+     * @param command
+     * @param tokens
+     * @param jobId
+     * @param term
+     * @return
+     * @throws IOException
+     */
     private Process createCommandProcess(Command command, ListIterator<CliToken> tokens, int jobId, Term term) throws IOException {
         List<CliToken> remaining = new ArrayList<CliToken>();
         List<CliToken> pipelineTokens = new ArrayList<CliToken>();

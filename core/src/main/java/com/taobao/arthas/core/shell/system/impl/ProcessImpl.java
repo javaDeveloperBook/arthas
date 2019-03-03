@@ -301,8 +301,16 @@ public class ProcessImpl implements Process {
         run(true);
     }
 
+    /**
+     *  执行 Job
+     *  重要语句：
+     *      Runnable task = new CommandProcessTask(process);
+     *      ArthasBootstrap.getInstance().execute(task);
+     * @param fg
+     */
     @Override
     public synchronized void run(boolean fg) {
+        // 判断执行状态
         if (processStatus != ExecStatus.READY) {
             throw new IllegalStateException("Cannot run proces in " + processStatus + " state");
         }
@@ -352,6 +360,7 @@ public class ProcessImpl implements Process {
             process.echoTips("job id  : " + this.jobId + "\n");
             process.echoTips("cache location  : " + cacheLocation() + "\n");
         }
+        // CommandProcessTask 内部类
         Runnable task = new CommandProcessTask(process);
         ArthasBootstrap.getInstance().execute(task);
     }
@@ -367,6 +376,7 @@ public class ProcessImpl implements Process {
         @Override
         public void run() {
             try {
+                // ProcessHandler
                 handler.handle(process);
             } catch (Throwable t) {
                 logger.error(null, "Error during processing the command:", t);

@@ -43,14 +43,22 @@ public class HelpCommand extends AnnotatedCommand {
         this.cmd = cmd;
     }
 
+    /**
+     * 执行命令 CommandProcess process 参数
+     * @param process the command process
+     */
     @Override
     public void process(CommandProcess process) {
+        // 找到所有的命令
         List<Command> commands = allCommands(process.session());
+        // 查找命令的选项和参数
         Command targetCmd = findCommand(commands);
         String message;
         if (targetCmd == null) {
+            // 如果命令选项为null ，则返回 mainHelp
             message = RenderUtil.render(mainHelp(commands), process.width());
         } else {
+            // 如果有命令选项，则执行 commandHelp
             message = commandHelp(targetCmd, process.width());
         }
         process.write(message);

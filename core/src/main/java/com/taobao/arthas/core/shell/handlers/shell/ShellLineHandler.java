@@ -24,6 +24,13 @@ public class ShellLineHandler implements Handler<String> {
         this.term = shell.term();
     }
 
+    /**
+     * 根据不同的请求命令执行不同的逻辑
+     * 1. 如果是 exit,logout,quit,jobs,fg,bg,kill 等直接执行。
+     * 2. 如果是其他的命令，则创建Job，并运行。
+     * 举例 ：help 命令会 createJob()
+     * @param line
+     */
     @Override
     public void handle(String line) {
         if (line == null) {
@@ -41,10 +48,13 @@ public class ShellLineHandler implements Handler<String> {
         }
 
         String name = first.value();
+        // 判断命令，执行不同处理方法
         if (name.equals("exit") || name.equals("logout") || name.equals("quit")) {
+            // 处理退出
             handleExit();
             return;
         } else if (name.equals("jobs")) {
+            // 处理
             handleJobs();
             return;
         } else if (name.equals("fg")) {
@@ -57,9 +67,10 @@ public class ShellLineHandler implements Handler<String> {
             handleKill(tokens);
             return;
         }
-
+        // 创建Job
         Job job = createJob(tokens);
         if (job != null) {
+            // 创建job成功则执行，JobImpl 实现
             job.run();
         }
     }
@@ -77,9 +88,17 @@ public class ShellLineHandler implements Handler<String> {
         return result;
     }
 
+    /**
+     * 1.创建 Job 时，会根据具体客户端传递的命令，找到对应的 Command，并包装成 Process,
+     *   Process 再被包装成 Job。
+     * 2.运行 Job 时，反向先调用 Process，再找到对应的 Command，最终调用 Command 的 process 处理请求。
+     * @param tokens
+     * @return
+     */
     private Job createJob(List<CliToken> tokens) {
         Job job;
         try {
+            // 创建 Job
             job = shell.createJob(tokens);
         } catch (Exception e) {
             term.echo(e.getMessage() + "\n");

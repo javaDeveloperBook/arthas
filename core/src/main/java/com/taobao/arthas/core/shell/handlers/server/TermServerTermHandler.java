@@ -16,6 +16,7 @@ public class TermServerTermHandler implements Handler<Term> {
 
     @Override
     public void handle(Term term) {
+        // shellServer 是ShellServerImpl这个类对象
         shellServer.handleTerm(term);
     }
 }

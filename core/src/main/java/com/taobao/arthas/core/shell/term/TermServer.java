@@ -8,7 +8,7 @@ import com.taobao.arthas.core.shell.term.impl.TelnetTermServer;
 
 /**
  * A server for terminal based applications.
- *
+ * 基于终端的应用程序的服务器
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public abstract class TermServer {

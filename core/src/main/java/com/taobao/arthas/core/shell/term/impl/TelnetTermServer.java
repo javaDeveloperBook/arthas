@@ -43,11 +43,20 @@ public class TelnetTermServer extends TermServer {
     @Override
     public TermServer listen(Handler<Future<TermServer>> listenHandler) {
         // TODO: charset and inputrc from options
+        // 创建 NettyTelnetTtyBootstrap 实例对象，启动telnet端口监听
         bootstrap = new NettyTelnetTtyBootstrap().setHost(hostIp).setPort(port);
         try {
+            // 启动
             bootstrap.start(new Consumer<TtyConnection>() {
                 @Override
                 public void accept(final TtyConnection conn) {
+                    /**
+                     * Helper.loadKeymap()这个类方法主要是在项目目录inputrc文件里加载对应的快捷键
+                     * 以及对应的处理类name标识，返回个映射对象，对命令行界面快捷键指示处理需要。
+                     *
+                     * 当有命令过来时，通过termHandler.handle进行处理,
+                     * termHandler来自于 TermServerTermHandler
+                     */
                     termHandler.handle(new TermImpl(Helper.loadKeymap(), conn));
                 }
             }).get(connectionTimeout, TimeUnit.MILLISECONDS);

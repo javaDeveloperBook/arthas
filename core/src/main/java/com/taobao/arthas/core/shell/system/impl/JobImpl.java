@@ -185,18 +185,28 @@ public class JobImpl implements Job {
         return run(!runInBackground.get());
     }
 
+    /**
+     * 执行命令 job
+     * @param foreground
+     * @return
+     */
     @Override
     public Job run(boolean foreground) {
+        // 前台执行处理
         if (foreground && foregroundUpdatedHandler != null) {
             foregroundUpdatedHandler.handle(this);
         }
 
+        // 执行状态
         actualStatus = ExecStatus.RUNNING;
         if (statusUpdateHandler != null) {
             statusUpdateHandler.handle(ExecStatus.RUNNING);
         }
+        // 设置 tty
         process.setTty(shell.term());
+        // 设置 Session
         process.setSession(shell.session());
+        // 通过 process.run() 执行命令,ProcessImpl 类实现
         process.run(foreground);
 
         if (!foreground && foregroundUpdatedHandler != null) {
