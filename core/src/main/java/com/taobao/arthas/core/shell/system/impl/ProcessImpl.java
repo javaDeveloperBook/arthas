@@ -360,8 +360,9 @@ public class ProcessImpl implements Process {
             process.echoTips("job id  : " + this.jobId + "\n");
             process.echoTips("cache location  : " + cacheLocation() + "\n");
         }
-        // CommandProcessTask 内部类
+        // CommandProcessTask 是内部类，实现Runnable接口，定义了 run() 方法，调用ProcessHandler.process()
         Runnable task = new CommandProcessTask(process);
+        // 交给可缓存线程池 executorService 执行这个task
         ArthasBootstrap.getInstance().execute(task);
     }
 

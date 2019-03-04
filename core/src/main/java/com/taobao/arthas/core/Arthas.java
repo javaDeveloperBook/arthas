@@ -23,7 +23,7 @@ public class Arthas {
     private static final String DEFAULT_HTTP_PORT = "8563";
 
     private Arthas(String[] args) throws Exception {
-        //1.先是解析入参配置参数取得 Configure，2.再进行
+        //1.先是解析入参配置参数取得 Configure，2.再进行 attachAgent
         attachAgent(parse(args));
     }
 
@@ -89,7 +89,7 @@ public class Arthas {
     private void attachAgent(Configure configure) throws Exception {
         // 描述虚拟机的容器类,配合 VirtualMachine 类完成各种功能
         VirtualMachineDescriptor virtualMachineDescriptor = null;
-        // 获取一个VirtualMachineDescriptor 列表
+        // 获取一个VirtualMachineDescriptor 列表,进行遍历，目的是：找出目标进程的 virtualMachineDescriptor 对象
         for (VirtualMachineDescriptor descriptor : VirtualMachine.list()) {
             String pid = descriptor.id();
             // 与入参的 JavaPid 比较，如果相等即表示要 attach 的 VirtualMachine 的容器是当前容器
@@ -102,9 +102,11 @@ public class Arthas {
         VirtualMachine virtualMachine = null;
         try {
             // 判断 virtualMachineDescriptor 是否为空，使用不同的方法获取 virtualMachine
-            if (null == virtualMachineDescriptor) { // 使用 attach(String pid) 这种方式
+            if (null == virtualMachineDescriptor) {
+                // 使用 attach(String pid) 这种方式
                 virtualMachine = VirtualMachine.attach("" + configure.getJavaPid());
             } else {
+                // 使用 attach(VirtualMachineDescriptor virtualMachineDescriptor)
                 virtualMachine = VirtualMachine.attach(virtualMachineDescriptor);
             }
 
@@ -112,7 +114,7 @@ public class Arthas {
             Properties targetSystemProperties = virtualMachine.getSystemProperties();
             // 目标Java虚拟机版本
             String targetJavaVersion = JavaVersionUtils.javaVersionStr(targetSystemProperties);
-            // 当前Java虚拟机版本
+            // 当前Java虚拟机版本(java -jar)
             String currentJavaVersion = JavaVersionUtils.javaVersionStr();
             // 判断如果目标Java虚拟机版本和当前Java虚拟机版本都不为null
             if (targetJavaVersion != null && currentJavaVersion != null) {
@@ -124,13 +126,14 @@ public class Arthas {
                                     targetSystemProperties.getProperty("java.home"), System.getProperty("java.home"));
                 }
             }
-            // 参考文章https://blog.csdn.net/youyou1543724847/article/details/84952218
             /**
              * 加载代理(加载arthas-agent.jar包，并运行)，HotSpotVirtualMachine 具体实现
              * 参数：
              *  1.arthas-agent.jar 包路径,eg.D:\\Program\\arthas\\arthas-agent.jar
              *  2.arthas-core.jar 包路径和 configure 序列化之后的字符串 ,
              *      D:\\Program\\arthas\\arthas-core.jar;;telnetPort=3658;httpPort=8563;ip=127.0.0.1;arthasAgent=D:\\Program\\arthas\\arthas-agent.jar;sessionTimeout=1800;arthasCore=D:\\Program\\arthas\\arthas-core.jar;javaPid=21972;
+             *
+             *   参考文章https://blog.csdn.net/youyou1543724847/article/details/84952218
              */
             virtualMachine.loadAgent(configure.getArthasAgent(),
                             configure.getArthasCore() + ";" + configure.toString());
@@ -142,20 +145,19 @@ public class Arthas {
         }
     }
 
-
+    /**
+     * ${JAVA_HOME}"/bin/java \
+     *      ${opts}  \
+     *      -jar "${arthas_lib_dir}/arthas-core.jar" \
+     *          -pid ${TARGET_PID} \             要注入的进程id
+     *          -target-ip ${TARGET_IP} \       服务器ip地址
+     *          -telnet-port ${TELNET_PORT} \  服务器telnet服务端口号
+     *          -http-port ${HTTP_PORT} \      websocket服务端口号
+     *          -core "${arthas_lib_dir}/arthas-core.jar" \      arthas-core目录
+     *          -agent "${arthas_lib_dir}/arthas-agent.jar"    arthas-agent目录
+     */
     public static void main(String[] args) {
         try {
-            /**
-             * ${JAVA_HOME}"/bin/java \
-             *      ${opts}  \
-             *      -jar "${arthas_lib_dir}/arthas-core.jar" \
-             *          -pid ${TARGET_PID} \             要注入的进程id
-             *          -target-ip ${TARGET_IP} \       服务器ip地址
-             *          -telnet-port ${TELNET_PORT} \  服务器telnet服务端口号
-             *          -http-port ${HTTP_PORT} \      websocket服务端口号
-             *          -core "${arthas_lib_dir}/arthas-core.jar" \      arthas-core目录
-             *          -agent "${arthas_lib_dir}/arthas-agent.jar"    arthas-agent目录
-             */
             //启动类，注意 args 入参
             new Arthas(args);
         } catch (Throwable t) {

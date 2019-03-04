@@ -140,7 +140,7 @@ public class ShellServerImpl extends ShellServer {
         }
         // 创建 TermServerListenHandler 对象
         Handler<Future<TermServer>> handler = new TermServerListenHandler(this, listenHandler, toStart);
-        // 遍历 termServer
+        // 遍历 termServer,也就是TelnetTermServer 和 HttpTermServer ,目的是设置 termHandler 和 启动它们的listen方法
         for (TermServer termServer : toStart) {
             // 设置 TermServerTermHandler 对象
             termServer.termHandler(new TermServerTermHandler(this));

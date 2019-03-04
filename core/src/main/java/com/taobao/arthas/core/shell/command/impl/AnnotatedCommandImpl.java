@@ -77,13 +77,16 @@ public class AnnotatedCommandImpl extends Command {
     private void process(CommandProcess process) {
         AnnotatedCommand instance;
         try {
+            // 反射， clazz = HelpCommand.class 、 MonitorCommand.class等命令类
             instance = clazz.newInstance();
         } catch (Exception e) {
             process.end();
             return;
         }
         CLIConfigurator.inject(process.commandLine(), instance);
+        // 调用 HelpCommand.class 、 MonitorCommand.class 等命令类的 process() 方法
         instance.process(process);
+        //
         UserStatUtil.arthasUsageSuccess(name(), process.args());
     }
 

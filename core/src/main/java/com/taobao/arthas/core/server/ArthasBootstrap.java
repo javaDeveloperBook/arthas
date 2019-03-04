@@ -82,9 +82,7 @@ public class ArthasBootstrap {
 
         try {
             // 创建 Shell 服务选项对象
-            ShellServerOptions options = new ShellServerOptions()
-                            .setInstrumentation(instrumentation)
-                            .setPid(pid)
+            ShellServerOptions options = new ShellServerOptions().setInstrumentation(instrumentation).setPid(pid)
                             .setSessionTimeout(configure.getSessionTimeout() * 1000);
             // 创建 shellServer 对象，ShellServer 是整个服务端的门面类，由ShellServerImpl 具体实现
             shellServer = new ShellServerImpl(options, this);

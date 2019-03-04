@@ -141,6 +141,7 @@ public class JobControllerImpl implements JobController {
                     // 取得 Command 对象
                     Command command = commandManager.getCommand(token.value());
                     if (command != null) {
+                        // 取得 Process 对象
                         return createCommandProcess(command, tokens, jobId, term);
                     } else {
                         throw new IllegalArgumentException(token.value() + ": command not found");
@@ -175,7 +176,9 @@ public class JobControllerImpl implements JobController {
     private Process createCommandProcess(Command command, ListIterator<CliToken> tokens, int jobId, Term term) throws IOException {
         List<CliToken> remaining = new ArrayList<CliToken>();
         List<CliToken> pipelineTokens = new ArrayList<CliToken>();
+        // 是否有管道
         boolean isPipeline = false;
+        // 重定向处理程序
         RedirectHandler redirectHandler = null;
         List<Function<String, String>> stdoutHandlerChain = new ArrayList<Function<String, String>>();
         String cacheLocation = null;
@@ -183,12 +186,14 @@ public class JobControllerImpl implements JobController {
             CliToken remainingToken = tokens.next();
             if (remainingToken.isText()) {
                 String tokenValue = remainingToken.value();
+                // 判断是管道命令
                 if ("|".equals(tokenValue)) {
                     isPipeline = true;
                     // 将管道符|之后的部分注入为输出链上的handler
                     injectHandler(stdoutHandlerChain, pipelineTokens);
                     continue;
                 } else if (">>".equals(tokenValue) || ">".equals(tokenValue)) {
+                    // 重定向命令文件名
                     String name = getRedirectFileName(tokens);
                     if (name == null) {
                         // 如果没有指定重定向文件名，那么重定向到以jobid命名的缓存中
@@ -199,6 +204,7 @@ public class JobControllerImpl implements JobController {
                             throw new IllegalStateException("The amount of async command that saving result to file can't > 8");
                         }
                     }
+                    // 重定向处理handler
                     redirectHandler = new RedirectHandler(name, ">>".equals(tokenValue));
                     break;
                 }
@@ -218,7 +224,9 @@ public class JobControllerImpl implements JobController {
                 stdoutHandlerChain.add(new RedirectHandler());
             }
         }
+        // 处理命令结果输出
         ProcessOutput ProcessOutput = new ProcessOutput(stdoutHandlerChain, cacheLocation, term);
+        // 创建 process，注意 command.processHandler() ：command 对应的 processHandler 赋值给ProcessImpl属性,后面可以找到对应的处理命令程序
         return new ProcessImpl(command, remaining, command.processHandler(), ProcessOutput);
     }
 

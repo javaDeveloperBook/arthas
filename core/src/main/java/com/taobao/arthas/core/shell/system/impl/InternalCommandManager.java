@@ -49,7 +49,7 @@ public class InternalCommandManager {
 
     /**
      * Perform completion, the completion argument will be notified of the completion progress.
-     *
+     * 执行完成后，将通知完成参数完成进度。
      * @param completion the completion object
      */
     public void complete(final Completion completion) {

@@ -49,19 +49,22 @@ public class HelpCommand extends AnnotatedCommand {
      */
     @Override
     public void process(CommandProcess process) {
-        // 找到所有的命令
+        // 首先查询session里面的内建所有的命令缓存，即 HelpCommand.class 、 MonitorCommand.class 等命令类的 AnnotatedCommandImpl 实例对象
         List<Command> commands = allCommands(process.session());
-        // 查找命令的选项和参数
+        // 遍历查找到目的命令的 AnnotatedCommandImpl 实例对象,比如这里是 HelpCommand.class 的 AnnotatedCommandImpl 实例对象
         Command targetCmd = findCommand(commands);
+        //执行结果
         String message;
         if (targetCmd == null) {
-            // 如果命令选项为null ，则返回 mainHelp
+            // 如果目的命令（help）为 null，则返回 mainHelp 内容
             message = RenderUtil.render(mainHelp(commands), process.width());
         } else {
-            // 如果有命令选项，则执行 commandHelp
+            // 如果目的命令（help）不为 null，则执行 commandHelp，执行 help 命令操作
             message = commandHelp(targetCmd, process.width());
         }
+        // 返回执行结果
         process.write(message);
+        // 终止 CommandProcess
         process.end();
     }
 
